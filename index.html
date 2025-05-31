@@ -499,44 +499,58 @@
         };
 
         // Start Screensaver
-        function startScreensaver() {
-            const screensaver = document.getElementById('screensaver');
-            screensaver.classList.add('active');
-            screensaverActive = true;
-            
-            // Start image generation
-            fetchNewImage();
-            startTimers();
-            
-            // Prevent scrolling
-            document.body.style.overflow = 'hidden';
-            
-            showToast('Screensaver started! Press ESC to exit.');
-        }
+		function startScreensaver() {
+			const screensaver = document.getElementById('screensaver');
+			screensaver.classList.add('active');
+			screensaverActive = true;
+			
+			// Ensure controls are visible when starting
+			controlsHidden = false;
+			const controls = document.getElementById('screensaver-controls');
+			const thumbnails = document.getElementById('thumbnails');
+			controls.classList.remove('hidden');
+			thumbnails.classList.remove('hidden');
+			
+			// Start image generation
+			fetchNewImage();
+			startTimers();
+			
+			// Prevent scrolling
+			document.body.style.overflow = 'hidden';
+			
+			showToast('Screensaver started! Press ESC to exit.');
+		}
 
         // Exit Screensaver
-        function exitScreensaver() {
-            const screensaver = document.getElementById('screensaver');
-            screensaver.classList.remove('active');
-            screensaverActive = false;
-            
-            // Clear timers
-            clearInterval(imageTimer);
-            clearInterval(promptTimer);
-            
-            // Clear history
-            imageHistory = [];
-            promptHistory = [];
-            updateThumbnails();
-            
-            // Restore scrolling
-            document.body.style.overflow = '';
-            
-            // Exit fullscreen if active
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            }
-        }
+		function exitScreensaver() {
+			const screensaver = document.getElementById('screensaver');
+			screensaver.classList.remove('active');
+			screensaverActive = false;
+			
+			// Clear timers
+			clearInterval(imageTimer);
+			clearInterval(promptTimer);
+			
+			// Clear history
+			imageHistory = [];
+			promptHistory = [];
+			updateThumbnails();
+			
+			// Restore scrolling
+			document.body.style.overflow = '';
+			
+			// Exit fullscreen if active
+			if (document.fullscreenElement) {
+				document.exitFullscreen();
+			}
+			
+			// Reset controls visibility for next time
+			controlsHidden = false;
+			const controls = document.getElementById('screensaver-controls');
+			const thumbnails = document.getElementById('thumbnails');
+			controls.classList.remove('hidden');
+			thumbnails.classList.remove('hidden');
+		}
 
         // Toggle Play/Pause
         function togglePlayPause() {
@@ -785,31 +799,39 @@
             }, 3000);
         }
 
-        // Keyboard Controls
-        document.addEventListener('keydown', (e) => {
-            if (!screensaverActive) return;
-            
-            switch(e.key) {
-                case 'Escape':
-                    exitScreensaver();
-                    break;
-                case ' ':
-                    togglePlayPause();
-                    break;
-                case 'f':
-                    toggleFullscreen();
-                    break;
-                case 's':
-                    saveCurrentImage();
-                    break;
-                case 'c':
-                    copyCurrentImage();
-                    break;
-                case 'h':
-                    toggleControls();
-                    break;
-            }
-        });
+		document.addEventListener('keydown', (e) => {
+			if (!screensaverActive) return;
+			
+			switch(e.key) {
+				case 'Escape':
+					if (controlsHidden) {
+						// First ESC: Show controls if hidden
+						toggleControls();
+					} else if (document.fullscreenElement) {
+						// Second ESC: Exit fullscreen if in fullscreen
+						document.exitFullscreen();
+					} else {
+						// Third ESC: Exit screensaver
+						exitScreensaver();
+					}
+					break;
+				case ' ':
+					togglePlayPause();
+					break;
+				case 'f':
+					toggleFullscreen();
+					break;
+				case 's':
+					saveCurrentImage();
+					break;
+				case 'c':
+					copyCurrentImage();
+					break;
+				case 'h':
+					toggleControls();
+					break;
+			}
+		});
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
