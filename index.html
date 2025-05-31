@@ -757,18 +757,37 @@
 		}
 
         // Save Current Image
-        function saveCurrentImage() {
-            const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
-            const link = document.createElement('a');
-            link.href = currentElement.src;
-            link.download = `unity-ai-${Date.now()}.png`;
-            link.click();
-            showToast('Image download started');
-        }
+		function saveCurrentImage() {
+			// Get the currently VISIBLE image based on opacity
+			const image1 = document.getElementById('screensaver-image1');
+			const image2 = document.getElementById('screensaver-image2');
+			
+			let currentElement;
+			if (parseFloat(window.getComputedStyle(image1).opacity) > 0.5) {
+				currentElement = image1;
+			} else {
+				currentElement = image2;
+			}
+			
+			const link = document.createElement('a');
+			link.href = currentElement.src;
+			link.download = `unity-ai-${Date.now()}.png`;
+			link.click();
+			showToast('Image download started');
+		}
 
         // Copy Current Image
 		async function copyCurrentImage() {
-			const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
+			// Get the currently VISIBLE image based on opacity
+			const image1 = document.getElementById('screensaver-image1');
+			const image2 = document.getElementById('screensaver-image2');
+			
+			let currentElement;
+			if (parseFloat(window.getComputedStyle(image1).opacity) > 0.5) {
+				currentElement = image1;
+			} else {
+				currentElement = image2;
+			}
 			
 			try {
 				const response = await fetch(currentElement.src);
@@ -781,7 +800,6 @@
 				console.error('Copy failed:', err);
 				showToast('Failed to copy image');
 			}
-			// Don't stop any timers or change state
 		}
 
         // Start Timers
@@ -865,6 +883,16 @@
 				case 'h':
 					toggleControls();
 					break;
+			}
+		});
+
+		document.addEventListener('contextmenu', (e) => {
+			if (!screensaverActive) return;
+			
+			// Check if right-click is on an image
+			if (e.target.classList.contains('screensaver-image')) {
+				e.preventDefault();
+				copyCurrentImage();
 			}
 		});
 
