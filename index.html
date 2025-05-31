@@ -799,8 +799,15 @@
             }, 3000);
         }
 
+		// Replace the existing keyboard event handler with this:
 		document.addEventListener('keydown', (e) => {
 			if (!screensaverActive) return;
+			
+			// Don't process keyboard shortcuts if user is typing in the prompt input
+			const promptInput = document.getElementById('prompt-input');
+			if (document.activeElement === promptInput) {
+				return; // Let the user type normally
+			}
 			
 			switch(e.key) {
 				case 'Escape':
@@ -816,6 +823,7 @@
 					}
 					break;
 				case ' ':
+					e.preventDefault(); // Prevent space from scrolling
 					togglePlayPause();
 					break;
 				case 'f':
