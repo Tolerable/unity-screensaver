@@ -652,46 +652,64 @@
         }
 
         // Fetch New Image
-        async function fetchNewImage() {
-            if (isTransitioning) return;
-            isTransitioning = true;
-            
-            let prompt = document.getElementById('prompt-input').value.trim();
-            
-            if (!prompt && autoPromptEnabled) {
-                prompt = await fetchDynamicPrompt();
-            } else if (!prompt) {
-                prompt = "surreal AI dreamscape";
-            }
-            
-            const dimensions = getDimensions(settings.aspect);
-            const seed = Math.floor(Math.random() * 1000000);
-            
-            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}&model=${settings.model}&nologo=true&private=${settings.private}&enhance=${settings.enhance}`;
-            
-            const nextImage = currentImageIndex === 1 ? 2 : 1;
-            const nextElement = document.getElementById(`screensaver-image${nextImage}`);
-            const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
-            
-            nextElement.onload = () => {
-                nextElement.style.opacity = '1';
-                currentElement.style.opacity = '0';
-                currentImageIndex = nextImage;
-                
-                // Add to history
-                imageHistory.unshift(url);
-                promptHistory.unshift(prompt);
-                if (imageHistory.length > 12) {
-                    imageHistory.pop();
-                    promptHistory.pop();
-                }
-                
-                updateThumbnails();
-                isTransitioning = false;
-            };
-            
-            nextElement.src = url;
-        }
+		async function fetchNewImage() {
+			if (isTransitioning || !screensaverActive || isPaused) return;
+			
+			isTransitioning = true;
+			
+			try {
+				let prompt = document.getElementById('prompt-input').value.trim();
+				
+				if (!prompt && autoPromptEnabled) {
+					prompt = await fetchDynamicPrompt();
+				} else if (!prompt) {
+					prompt = "surreal AI dreamscape";
+				}
+				
+				const dimensions = getDimensions(settings.aspect);
+				const seed = Math.floor(Math.random() * 1000000);
+				
+				const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}&model=${settings.model}&nologo=true&private=${settings.private}&enhance=${settings.enhance}`;
+				
+				const nextImage = currentImageIndex === 1 ? 2 : 1;
+				const nextElement = document.getElementById(`screensaver-image${nextImage}`);
+				const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
+				
+				// Add error handling
+				nextElement.onerror = () => {
+					console.error('Failed to load image');
+					isTransitioning = false;
+					// Try again in 5 seconds
+					setTimeout(() => {
+						if (screensaverActive && !isPaused) {
+							fetchNewImage();
+						}
+					}, 5000);
+				};
+				
+				nextElement.onload = () => {
+					nextElement.style.opacity = '1';
+					currentElement.style.opacity = '0';
+					currentImageIndex = nextImage;
+					
+					// Add to history
+					imageHistory.unshift(url);
+					promptHistory.unshift(prompt);
+					if (imageHistory.length > 12) {
+						imageHistory.pop();
+						promptHistory.pop();
+					}
+					
+					updateThumbnails();
+					isTransitioning = false;
+				};
+				
+				nextElement.src = url;
+			} catch (error) {
+				console.error('Error in fetchNewImage:', error);
+				isTransitioning = false;
+			}
+		}
 
         // Get Dimensions
         function getDimensions(aspect) {
@@ -721,20 +739,22 @@
         }
 
         // Show Historical Image
-        function showHistoricalImage(index) {
-            const url = imageHistory[index];
-            const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
-            const nextImage = currentImageIndex === 1 ? 2 : 1;
-            const nextElement = document.getElementById(`screensaver-image${nextImage}`);
-            
-            nextElement.src = url;
-            nextElement.onload = () => {
-                nextElement.style.opacity = '1';
-                currentElement.style.opacity = '0';
-                currentImageIndex = nextImage;
-                updateThumbnails();
-            };
-        }
+		function showHistoricalImage(index) {
+			if (isTransitioning) return; // Don't interrupt ongoing transitions
+			
+			const url = imageHistory[index];
+			const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
+			const nextImage = currentImageIndex === 1 ? 2 : 1;
+			const nextElement = document.getElementById(`screensaver-image${nextImage}`);
+			
+			nextElement.src = url;
+			nextElement.onload = () => {
+				nextElement.style.opacity = '1';
+				currentElement.style.opacity = '0';
+				currentImageIndex = nextImage;
+				updateThumbnails();
+			};
+		}
 
         // Save Current Image
         function saveCurrentImage() {
@@ -747,20 +767,22 @@
         }
 
         // Copy Current Image
-        async function copyCurrentImage() {
-            const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
-            
-            try {
-                const response = await fetch(currentElement.src);
-                const blob = await response.blob();
-                await navigator.clipboard.write([
-                    new ClipboardItem({ 'image/png': blob })
-                ]);
-                showToast('Image copied to clipboard!');
-            } catch (err) {
-                showToast('Failed to copy image');
-            }
-        }
+		async function copyCurrentImage() {
+			const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
+			
+			try {
+				const response = await fetch(currentElement.src);
+				const blob = await response.blob();
+				await navigator.clipboard.write([
+					new ClipboardItem({ 'image/png': blob })
+				]);
+				showToast('Image copied to clipboard!');
+			} catch (err) {
+				console.error('Copy failed:', err);
+				showToast('Failed to copy image');
+			}
+			// Don't stop any timers or change state
+		}
 
         // Start Timers
         function startTimers() {
@@ -771,13 +793,18 @@
         }
 
         // Start Image Timer
-        function startImageTimer() {
-            imageTimer = setInterval(() => {
-                if (!isPaused && screensaverActive) {
-                    fetchNewImage();
-                }
-            }, settings.timer * 1000);
-        }
+		function startImageTimer() {
+			// Clear any existing timer first
+			if (imageTimer) {
+				clearInterval(imageTimer);
+			}
+			
+			imageTimer = setInterval(() => {
+				if (!isPaused && screensaverActive && !isTransitioning) {
+					fetchNewImage();
+				}
+			}, settings.timer * 1000);
+		}
 
         // Start Prompt Timer
         function startPromptTimer() {
