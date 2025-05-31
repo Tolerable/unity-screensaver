@@ -214,6 +214,7 @@
             height: 100%;
             object-fit: contain;
             transition: opacity var(--transition-duration, 1s) ease;
+            crossorigin: anonymous;
         }
 
         /* Screensaver Controls */
@@ -499,58 +500,58 @@
         };
 
         // Start Screensaver
-		function startScreensaver() {
-			const screensaver = document.getElementById('screensaver');
-			screensaver.classList.add('active');
-			screensaverActive = true;
-			
-			// Ensure controls are visible when starting
-			controlsHidden = false;
-			const controls = document.getElementById('screensaver-controls');
-			const thumbnails = document.getElementById('thumbnails');
-			controls.classList.remove('hidden');
-			thumbnails.classList.remove('hidden');
-			
-			// Start image generation
-			fetchNewImage();
-			startTimers();
-			
-			// Prevent scrolling
-			document.body.style.overflow = 'hidden';
-			
-			showToast('Screensaver started! Press ESC to exit.');
-		}
+        function startScreensaver() {
+            const screensaver = document.getElementById('screensaver');
+            screensaver.classList.add('active');
+            screensaverActive = true;
+            
+            // Ensure controls are visible when starting
+            controlsHidden = false;
+            const controls = document.getElementById('screensaver-controls');
+            const thumbnails = document.getElementById('thumbnails');
+            controls.classList.remove('hidden');
+            thumbnails.classList.remove('hidden');
+            
+            // Start image generation
+            fetchNewImage();
+            startTimers();
+            
+            // Prevent scrolling
+            document.body.style.overflow = 'hidden';
+            
+            showToast('Screensaver started! Press ESC to exit.');
+        }
 
         // Exit Screensaver
-		function exitScreensaver() {
-			const screensaver = document.getElementById('screensaver');
-			screensaver.classList.remove('active');
-			screensaverActive = false;
-			
-			// Clear timers
-			clearInterval(imageTimer);
-			clearInterval(promptTimer);
-			
-			// Clear history
-			imageHistory = [];
-			promptHistory = [];
-			updateThumbnails();
-			
-			// Restore scrolling
-			document.body.style.overflow = '';
-			
-			// Exit fullscreen if active
-			if (document.fullscreenElement) {
-				document.exitFullscreen();
-			}
-			
-			// Reset controls visibility for next time
-			controlsHidden = false;
-			const controls = document.getElementById('screensaver-controls');
-			const thumbnails = document.getElementById('thumbnails');
-			controls.classList.remove('hidden');
-			thumbnails.classList.remove('hidden');
-		}
+        function exitScreensaver() {
+            const screensaver = document.getElementById('screensaver');
+            screensaver.classList.remove('active');
+            screensaverActive = false;
+            
+            // Clear timers
+            clearInterval(imageTimer);
+            clearInterval(promptTimer);
+            
+            // Clear history
+            imageHistory = [];
+            promptHistory = [];
+            updateThumbnails();
+            
+            // Restore scrolling
+            document.body.style.overflow = '';
+            
+            // Exit fullscreen if active
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            
+            // Reset controls visibility for next time
+            controlsHidden = false;
+            const controls = document.getElementById('screensaver-controls');
+            const thumbnails = document.getElementById('thumbnails');
+            controls.classList.remove('hidden');
+            thumbnails.classList.remove('hidden');
+        }
 
         // Toggle Play/Pause
         function togglePlayPause() {
@@ -652,64 +653,66 @@
         }
 
         // Fetch New Image
-		async function fetchNewImage() {
-			if (isTransitioning || !screensaverActive || isPaused) return;
-			
-			isTransitioning = true;
-			
-			try {
-				let prompt = document.getElementById('prompt-input').value.trim();
-				
-				if (!prompt && autoPromptEnabled) {
-					prompt = await fetchDynamicPrompt();
-				} else if (!prompt) {
-					prompt = "surreal AI dreamscape";
-				}
-				
-				const dimensions = getDimensions(settings.aspect);
-				const seed = Math.floor(Math.random() * 1000000);
-				
-				const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}&model=${settings.model}&nologo=true&private=${settings.private}&enhance=${settings.enhance}`;
-				
-				const nextImage = currentImageIndex === 1 ? 2 : 1;
-				const nextElement = document.getElementById(`screensaver-image${nextImage}`);
-				const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
-				
-				// Add error handling
-				nextElement.onerror = () => {
-					console.error('Failed to load image');
-					isTransitioning = false;
-					// Try again in 5 seconds
-					setTimeout(() => {
-						if (screensaverActive && !isPaused) {
-							fetchNewImage();
-						}
-					}, 5000);
-				};
-				
-				nextElement.onload = () => {
-					nextElement.style.opacity = '1';
-					currentElement.style.opacity = '0';
-					currentImageIndex = nextImage;
-					
-					// Add to history
-					imageHistory.unshift(url);
-					promptHistory.unshift(prompt);
-					if (imageHistory.length > 12) {
-						imageHistory.pop();
-						promptHistory.pop();
-					}
-					
-					updateThumbnails();
-					isTransitioning = false;
-				};
-				
-				nextElement.src = url;
-			} catch (error) {
-				console.error('Error in fetchNewImage:', error);
-				isTransitioning = false;
-			}
-		}
+        async function fetchNewImage() {
+            if (isTransitioning || !screensaverActive || isPaused) return;
+            
+            isTransitioning = true;
+            
+            try {
+                let prompt = document.getElementById('prompt-input').value.trim();
+                
+                if (!prompt && autoPromptEnabled) {
+                    prompt = await fetchDynamicPrompt();
+                } else if (!prompt) {
+                    prompt = "surreal AI dreamscape";
+                }
+                
+                const dimensions = getDimensions(settings.aspect);
+                const seed = Math.floor(Math.random() * 1000000);
+                
+                const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}&model=${settings.model}&nologo=true&private=${settings.private}&enhance=${settings.enhance}`;
+                
+                const nextImage = currentImageIndex === 1 ? 2 : 1;
+                const nextElement = document.getElementById(`screensaver-image${nextImage}`);
+                const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
+                
+                // Add CORS handling and error handling
+                nextElement.crossOrigin = 'anonymous';
+                
+                nextElement.onerror = () => {
+                    console.error('Failed to load image');
+                    isTransitioning = false;
+                    // Try again in 5 seconds
+                    setTimeout(() => {
+                        if (screensaverActive && !isPaused) {
+                            fetchNewImage();
+                        }
+                    }, 5000);
+                };
+                
+                nextElement.onload = () => {
+                    nextElement.style.opacity = '1';
+                    currentElement.style.opacity = '0';
+                    currentImageIndex = nextImage;
+                    
+                    // Add to history
+                    imageHistory.unshift(url);
+                    promptHistory.unshift(prompt);
+                    if (imageHistory.length > 12) {
+                        imageHistory.pop();
+                        promptHistory.pop();
+                    }
+                    
+                    updateThumbnails();
+                    isTransitioning = false;
+                };
+                
+                nextElement.src = url;
+            } catch (error) {
+                console.error('Error in fetchNewImage:', error);
+                isTransitioning = false;
+            }
+        }
 
         // Get Dimensions
         function getDimensions(aspect) {
@@ -739,68 +742,128 @@
         }
 
         // Show Historical Image
-		function showHistoricalImage(index) {
-			if (isTransitioning) return; // Don't interrupt ongoing transitions
-			
-			const url = imageHistory[index];
-			const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
-			const nextImage = currentImageIndex === 1 ? 2 : 1;
-			const nextElement = document.getElementById(`screensaver-image${nextImage}`);
-			
-			nextElement.src = url;
-			nextElement.onload = () => {
-				nextElement.style.opacity = '1';
-				currentElement.style.opacity = '0';
-				currentImageIndex = nextImage;
-				updateThumbnails();
-			};
-		}
+        function showHistoricalImage(index) {
+            if (isTransitioning) return; // Don't interrupt ongoing transitions
+            
+            const url = imageHistory[index];
+            const currentElement = document.getElementById(`screensaver-image${currentImageIndex}`);
+            const nextImage = currentImageIndex === 1 ? 2 : 1;
+            const nextElement = document.getElementById(`screensaver-image${nextImage}`);
+            
+            nextElement.crossOrigin = 'anonymous';
+            nextElement.src = url;
+            nextElement.onload = () => {
+                nextElement.style.opacity = '1';
+                currentElement.style.opacity = '0';
+                currentImageIndex = nextImage;
+                updateThumbnails();
+            };
+        }
 
         // Save Current Image
-		function saveCurrentImage() {
-			// Get the currently VISIBLE image based on opacity
-			const image1 = document.getElementById('screensaver-image1');
-			const image2 = document.getElementById('screensaver-image2');
-			
-			let currentElement;
-			if (parseFloat(window.getComputedStyle(image1).opacity) > 0.5) {
-				currentElement = image1;
-			} else {
-				currentElement = image2;
-			}
-			
-			const link = document.createElement('a');
-			link.href = currentElement.src;
-			link.download = `unity-ai-${Date.now()}.png`;
-			link.click();
-			showToast('Image download started');
-		}
+        function saveCurrentImage() {
+            // Get the currently VISIBLE image based on opacity
+            const image1 = document.getElementById('screensaver-image1');
+            const image2 = document.getElementById('screensaver-image2');
+            
+            let currentElement;
+            if (parseFloat(window.getComputedStyle(image1).opacity) > 0.5) {
+                currentElement = image1;
+            } else {
+                currentElement = image2;
+            }
+            
+            const link = document.createElement('a');
+            link.href = currentElement.src;
+            link.download = `unity-ai-${Date.now()}.png`;
+            link.click();
+            showToast('Image download started');
+        }
 
-        // Copy Current Image
-		async function copyCurrentImage() {
-			// Get the currently VISIBLE image based on opacity
-			const image1 = document.getElementById('screensaver-image1');
-			const image2 = document.getElementById('screensaver-image2');
-			
-			let currentElement;
-			if (parseFloat(window.getComputedStyle(image1).opacity) > 0.5) {
-				currentElement = image1;
-			} else {
-				currentElement = image2;
-			}
-			
-			try {
-				const response = await fetch(currentElement.src);
-				const blob = await response.blob();
-				await navigator.clipboard.write([
-					new ClipboardItem({ 'image/png': blob })
-				]);
-				showToast('Image copied to clipboard!');
-			} catch (err) {
-				console.error('Copy failed:', err);
-				showToast('Failed to copy image');
-			}
-		}
+        // Fixed copy function with better error handling
+        async function copyCurrentImage() {
+            // Get the currently VISIBLE image based on opacity
+            const image1 = document.getElementById('screensaver-image1');
+            const image2 = document.getElementById('screensaver-image2');
+            
+            let currentElement;
+            if (parseFloat(window.getComputedStyle(image1).opacity) > 0.5) {
+                currentElement = image1;
+            } else {
+                currentElement = image2;
+            }
+            
+            // Check if clipboard API is available
+            if (!navigator.clipboard || !window.ClipboardItem) {
+                // Fallback: copy URL to clipboard
+                try {
+                    await navigator.clipboard.writeText(currentElement.src);
+                    showToast('Image URL copied to clipboard!');
+                } catch (err) {
+                    showToast('Clipboard not supported');
+                }
+                return;
+            }
+            
+            try {
+                // Create a new image to ensure it's fully loaded and handle CORS
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                img.onload = async () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        canvas.width = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        // Convert to blob
+                        canvas.toBlob(async (blob) => {
+                            if (!blob) {
+                                showToast('Failed to create image blob');
+                                return;
+                            }
+                            
+                            try {
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({ 'image/png': blob })
+                                ]);
+                                showToast('Image copied to clipboard!');
+                            } catch (clipErr) {
+                                console.error('Clipboard error:', clipErr);
+                                // Fallback to URL
+                                try {
+                                    await navigator.clipboard.writeText(currentElement.src);
+                                    showToast('Image URL copied to clipboard!');
+                                } catch (urlErr) {
+                                    showToast('Failed to copy image');
+                                }
+                            }
+                        }, 'image/png');
+                    } catch (canvasErr) {
+                        console.error('Canvas error:', canvasErr);
+                        showToast('Failed to process image');
+                    }
+                };
+                
+                img.onerror = () => {
+                    // Fallback: copy URL
+                    navigator.clipboard.writeText(currentElement.src).then(() => {
+                        showToast('Image URL copied to clipboard!');
+                    }).catch(() => {
+                        showToast('Failed to copy image');
+                    });
+                };
+                
+                img.src = currentElement.src;
+                
+            } catch (err) {
+                console.error('Copy error:', err);
+                showToast('Failed to copy image');
+            }
+        }
 
         // Start Timers
         function startTimers() {
@@ -810,7 +873,7 @@
             }
         }
 
-        // Start Image Timer
+		// Start Image Timer
 		function startImageTimer() {
 			// Clear any existing timer first
 			if (imageTimer) {
@@ -824,14 +887,19 @@
 			}, settings.timer * 1000);
 		}
 
-        // Start Prompt Timer
-        function startPromptTimer() {
-            promptTimer = setInterval(() => {
-                if (!isPaused && screensaverActive && autoPromptEnabled) {
-                    fetchDynamicPrompt();
-                }
-            }, 20000); // Update prompt every 20 seconds
-        }
+		// Start Prompt Timer
+		function startPromptTimer() {
+			// Clear any existing timer first
+			if (promptTimer) {
+				clearInterval(promptTimer);
+			}
+			
+			promptTimer = setInterval(() => {
+				if (!isPaused && screensaverActive && autoPromptEnabled) {
+					fetchDynamicPrompt();
+				}
+			}, 20000); // Update prompt every 20 seconds
+		}
 
         // Show Toast
         function showToast(message) {
@@ -844,57 +912,57 @@
             }, 3000);
         }
 
-		// Replace the existing keyboard event handler with this:
-		document.addEventListener('keydown', (e) => {
-			if (!screensaverActive) return;
-			
-			// Don't process keyboard shortcuts if user is typing in the prompt input
-			const promptInput = document.getElementById('prompt-input');
-			if (document.activeElement === promptInput) {
-				return; // Let the user type normally
-			}
-			
-			switch(e.key) {
-				case 'Escape':
-					if (controlsHidden) {
-						// First ESC: Show controls if hidden
-						toggleControls();
-					} else if (document.fullscreenElement) {
-						// Second ESC: Exit fullscreen if in fullscreen
-						document.exitFullscreen();
-					} else {
-						// Third ESC: Exit screensaver
-						exitScreensaver();
-					}
-					break;
-				case ' ':
-					e.preventDefault(); // Prevent space from scrolling
-					togglePlayPause();
-					break;
-				case 'f':
-					toggleFullscreen();
-					break;
-				case 's':
-					saveCurrentImage();
-					break;
-				case 'c':
-					copyCurrentImage();
-					break;
-				case 'h':
-					toggleControls();
-					break;
-			}
-		});
+        // Replace the existing keyboard event handler with this:
+        document.addEventListener('keydown', (e) => {
+            if (!screensaverActive) return;
+            
+            // Don't process keyboard shortcuts if user is typing in the prompt input
+            const promptInput = document.getElementById('prompt-input');
+            if (document.activeElement === promptInput) {
+                return; // Let the user type normally
+            }
+            
+            switch(e.key) {
+                case 'Escape':
+                    if (controlsHidden) {
+                        // First ESC: Show controls if hidden
+                        toggleControls();
+                    } else if (document.fullscreenElement) {
+                        // Second ESC: Exit fullscreen if in fullscreen
+                        document.exitFullscreen();
+                    } else {
+                        // Third ESC: Exit screensaver
+                        exitScreensaver();
+                    }
+                    break;
+                case ' ':
+                    e.preventDefault(); // Prevent space from scrolling
+                    togglePlayPause();
+                    break;
+                case 'f':
+                    toggleFullscreen();
+                    break;
+                case 's':
+                    saveCurrentImage();
+                    break;
+                case 'c':
+                    copyCurrentImage();
+                    break;
+                case 'h':
+                    toggleControls();
+                    break;
+            }
+        });
 
-		document.addEventListener('contextmenu', (e) => {
-			if (!screensaverActive) return;
-			
-			// Check if right-click is on an image
-			if (e.target.classList.contains('screensaver-image')) {
-				e.preventDefault();
-				copyCurrentImage();
-			}
-		});
+        document.addEventListener('contextmenu', (e) => {
+            if (!screensaverActive) return;
+            
+            // Check if right-click is on an image
+            if (e.target.classList.contains('screensaver-image')) {
+                e.preventDefault();
+                copyCurrentImage();
+            }
+        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -903,4 +971,4 @@
         });
     </script>
 </body>
-</html>
+</html>			
